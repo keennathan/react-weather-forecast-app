@@ -1,57 +1,70 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 export default function Home() {
     const [query, setQuery] = useState("");
     const [weather, setWeather] = useState({});
+    const [location, setLocation] = useState({});
 
-    const fetchWeather = async (e) => {
+    const getLocation = async () => {
         if (query) {
             try {
-                // First API call to get the geographical coordinates
-                const geoResponse = await axios.get('http://api.openweathermap.org/geo/1.0/direct', {
-                    params: {
-                        q: query,
-                        limit: 1,
-                        appid: 'd44f61f522710ee945669091dc01941a' 
-                    }
-                });
-
-                if (geoResponse.data.length > 0) {
-                    const { lat, lon } = geoResponse.data[0];
-
-                    // Second API call to get the weather data using the coordinates
-                    const weatherResponse = await axios.get('https://api.openweathermap.org/data/3.0/onecall', {
+                const response = await axios.get(
+                    `http://api.openweathermap.org/geo/1.0/direct`,
+                    {
                         params: {
-                            lat: lat,
-                            lon: lon,
-                            exclude: 'minutely,hourly', 
-                            appid: 'd44f61f522710ee945669091dc01941a' 
+                            q: query,
+                            appid: import.meta.env.VITE_REACT_APP_WEATHER_API_KEY,
+                        },
+                    }
+                );
+                const locationData = response.data[0] || {};
+                setLocation(locationData);
+                return locationData;
+            } catch (error) {
+                console.error('Error fetching location data:', error);
+            }
+        }
+    };
+
+    const fetchWeather = async (e) => {
+        e.preventDefault();
+        const locationData = await getLocation();
+        if (locationData.lat && locationData.lon) {
+            try {
+                const response = await axios.get(
+                    `https://api.openweathermap.org/data/2.5/forecast`, {
+                        params: {
+                            lat: locationData.lat,
+                            lon: locationData.lon,
+                            units: "metric",
+                            appid: import.meta.env.VITE_REACT_APP_WEATHER_API_KEY,
                         }
                     });
-
-                    console.log(weatherResponse.data);
-                    setWeather(weatherResponse.data || {});
-                } else {
-                    console.error('No location found for the given query.');
-                }
+                console.log(response.data);
+                setWeather(response.data || {});
             } catch (error) {
                 console.error('Error fetching weather data:', error);
             }
         }
-    }
+    };
 
     return (
         <div>
             <h1>Search for Your Weather Forecast</h1>
-            <input type="text"
-            placeholder="Enter your city" 
-            value={query} 
-            onChange={(e) => setQuery(e.target.value)} />
+            <input type="text" 
+                value={query} 
+                onChange={(e) => setQuery(e.target.value)} />
             <button onClick={fetchWeather}>Search</button>
             <div>
-                {weather.name}
+                {weather.list && weather.list.length > 0 && (
+                    <div>
+                        <h2>Forecast</h2>
+                        <p>Temperature: {weather.list[0].main.temp}°C</p>
+                        <p>Weather: {weather.list[0].weather[0].description}</p>
+                    </div>
+                )}
             </div>
         </div>
-    )
+    );
 }
