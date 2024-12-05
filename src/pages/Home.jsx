@@ -62,6 +62,10 @@ export default function Home() {
                         <h2>Forecast</h2>
                         <p>Temperature: {weather.list[0].main.temp}°C</p>
                         <p>Weather: {weather.list[0].weather[0].description}</p>
+                        <img 
+                            src={`http://openweathermap.org/img/wn/${weather.list[0].weather[0].icon}@2x.png`} 
+                            alt={weather.list[0].weather[0].description} 
+                        />
                     </div>
                 )}
             </div>
